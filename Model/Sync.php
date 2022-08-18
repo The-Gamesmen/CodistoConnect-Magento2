@@ -2400,9 +2400,10 @@ class Sync
                             'store_id = '.$storeId.' OR EXISTS('.
                             'SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0'.
                             '))) THEN -1 ELSE 0 END')])
+                            ->reset('order')
                             ->order('entity_id')
                             ->limit($count);
-        $simpleProducts->setOrder('entity_id', 'ASC');
+        //$simpleProducts->setOrder('entity_id', 'ASC');
         // @codingStandardsIgnoreEnd
 
         $iterator->walk(
@@ -2467,9 +2468,10 @@ class Sync
                             'store_id = '.$storeId.' OR EXISTS('.
                             'SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0'.
                             '))) THEN -1 ELSE 0 END')])
+                            ->reset('order')
                             ->order('entity_id')
                             ->limit($count);
-        $virtualProducts->setOrder('entity_id', 'ASC');
+        //$virtualProducts->setOrder('entity_id', 'ASC');
         // @codingStandardsIgnoreEnd
 
         $iterator->walk(
@@ -2531,9 +2533,10 @@ class Sync
                 'SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS('.
                 'SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))) '.
                 'THEN -1 ELSE 0 END')])
+            ->reset('order')
             ->order('entity_id')
             ->limit($count);
-        $configurableProducts->setOrder('entity_id', 'ASC');
+        //$configurableProducts->setOrder('entity_id', 'ASC');
         // @codingStandardsIgnoreEnd
 
         $iterator->walk(
@@ -2595,9 +2598,10 @@ class Sync
             '(SELECT website_id FROM `'.$storeName.'` WHERE store_id = '.$storeId.' OR EXISTS'.
             '(SELECT 1 FROM `'.$storeName.'` WHERE store_id = '.$storeId.' AND website_id = 0))) '.
             'THEN -1 ELSE 0 END')])
+            ->reset('order')
             ->order('entity_id')
             ->limit($count);
-        $groupedProducts->setOrder('entity_id', 'ASC');
+        //$groupedProducts->setOrder('entity_id', 'ASC');
         // @codingStandardsIgnoreEnd
 
         $iterator->walk(
