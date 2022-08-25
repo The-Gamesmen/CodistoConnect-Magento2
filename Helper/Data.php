@@ -397,8 +397,7 @@ class Data
     public function runProcess($script, $args, $extensions, $stdin)
     {
         // @codingStandardsIgnoreStart
-        if (!function_exists('proc_open')
-            || !function_exists('proc_close')) {
+        if (!$this->_phpCanExec()) {
             return null;
         }
 
@@ -546,7 +545,8 @@ class Data
 
     private function _phpCanExec()
     {
-        return function_exists('proc_open') && function_exists('proc_close');
+        return false; // Gamesmen Edit: Force process forking off
+        //return function_exists('proc_open') && function_exists('proc_close');
     }
 
     private function _phpExtensionScript($extensions)
