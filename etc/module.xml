@@ -15,13 +15,13 @@
  * to license@magentocommerce.com so we can send you a copy immediately.
  *
  * @package   Codisto_Connect
- * @copyright 2016-2017 On Technology Pty. Ltd. (http://codisto.com/)
+ * @copyright 2016-2022 On Technology Pty. Ltd. (https://codisto.com/)
  * @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
- * @link      https://codisto.com/connect/
+ * @link      https://codisto.com/
  */
 
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
-	<module name="Codisto_Connect" schema_version="0" active="true" setup_version="1.91.46">
+	<module name="Codisto_Connect" schema_version="0" active="true" setup_version="1.91.47">
 	</module>
 </config>
