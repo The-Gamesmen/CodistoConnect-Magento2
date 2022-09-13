@@ -946,7 +946,7 @@ class Data
     {
         // quick helper to retrieve current transaction isolation
         // so it can be restored later
-        $qry = $connection->query('SELECT @@tx_isolation'); // @codingStandardsIgnoreLine MEQP2.Classes.ResourceModel.OutsideOfResourceModel MEQP1.SQL.RawQuery.FoundRawSql
+        $qry = $connection->query('SELECT @@transaction_isolation'); // @codingStandardsIgnoreLine MEQP2.Classes.ResourceModel.OutsideOfResourceModel MEQP1.SQL.RawQuery.FoundRawSql
         $txIsoLevel = $qry->fetchColumn();
         $qry->closeCursor();
 
