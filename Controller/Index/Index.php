@@ -576,7 +576,7 @@ class Index extends \Magento\Framework\App\Action\Action
 
                 if ($this->catalogInventoryConfig->isQty($typeId)) {
                     if ($this->canSubtractQty($stockItem)) {
-                        $productsToReindex[$product->getId()] = 0;
+                        $productsToReindex[$product->getId()] = $orderItem->getQtyOrdered();
 
                         $stockItem->setQty($stockItem->getQty() - $orderItem->getQtyOrdered());
                         $stockItem->save();
@@ -1363,7 +1363,7 @@ class Index extends \Magento\Framework\App\Action\Action
 
         if ($this->catalogInventoryConfig->isQty($typeId) &&
             $this->canSubtractQty($stockItem)) {
-            $productsToReindex[$product->getId()] = 0;
+            $productsToReindex[$product->getId()] = $qty;
 
             if (!$cancelled) {
                 $stockItem->setQty($stockItem->getQty() - (int)$qty);
