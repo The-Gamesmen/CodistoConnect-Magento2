@@ -985,21 +985,33 @@ class Index extends \Magento\Framework\App\Action\Action
         $order->setShippingDiscountAmount(0.0);
         $order->setBaseShippingDiscountAmount(0.0);
 
-        if($priceIncludesTax != 0) {
-            $order->setBaseDiscountTaxCompensationAmount($ordertaxtotal);
-            $order->setDiscountTaxCompensationAmount($ordertaxtotal);
-        } else {
-            $order->setBaseDiscountTaxCompensationAmount(0.0);
-            $order->setDiscountTaxCompensationAmount(0.0);
-        }
+        // if($priceIncludesTax != 0) {
+        //     $order->setBaseDiscountTaxCompensationAmount($ordertaxtotal);
+        //     $order->setDiscountTaxCompensationAmount($ordertaxtotal);
+        // } else {
+        //     $order->setBaseDiscountTaxCompensationAmount(0.0);
+        //     $order->setDiscountTaxCompensationAmount(0.0);
+        // }
 
-        if($shippingIncludesTax != 0) {
-            $order->setBaseShippingDiscountTaxCompensationAmnt($freighttax);
-            $order->setShippingDiscountTaxCompensationAmount($freighttax);
-        } else {
-            $order->setBaseHiddenShippingTaxAmnt(0.0);
-            $order->setHiddenShippingTaxAmount(0.0);
-        }
+        // if($shippingIncludesTax != 0) {
+        //     $order->setBaseShippingDiscountTaxCompensationAmnt($freighttax);
+        //     $order->setShippingDiscountTaxCompensationAmount($freighttax);
+        // } else {
+        //     $order->setBaseHiddenShippingTaxAmnt(0.0);
+        //     $order->setHiddenShippingTaxAmount(0.0);
+        // }
+
+
+        // ─── GAMESMEN EDIT ───────────────────────────────────────────────
+        // Restore M1 behaviour of "hidden tax", which is always zero
+
+        $order->setBaseDiscountTaxCompensationAmount(0.0);
+        $order->setDiscountTaxCompensationAmount(0.0);
+        $order->setBaseHiddenShippingTaxAmnt(0.0);
+        $order->setHiddenShippingTaxAmount(0.0);
+
+        // ─────────────────────────────────────────────────────────────────
+
 
         $order->setBaseGrandTotal($ordertotal);
         $order->setGrandTotal($ordertotal);
