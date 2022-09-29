@@ -944,7 +944,7 @@ class Sync
         $stockId = \Magento\CatalogInventory\Model\Stock::DEFAULT_STOCK_ID;
 
         /* Get salable stock from MSI for website */
-        $websiteCode = is_string($websiteId) ? $websiteId : $this->getWebsiteCodeByWebsiteId->execute((int)$websiteId);
+        $websiteCode = is_numeric($websiteId) ? $this->getWebsiteCodeByWebsiteId->execute((int)$websiteId) : $websiteId;
 
         $qty = null;
         $manageStock = null;
@@ -959,7 +959,7 @@ class Sync
         $backorders =
             $stockConfiguration->getBackorders() === StockItemConfigurationInterface::BACKORDERS_YES_NONOTIFY
             || $stockConfiguration->getBackorders() === StockItemConfigurationInterface::BACKORDERS_YES_NOTIFY ? -1 : 0;
-        $instock = $this->isProductSalable->execute($product->getSku(), $stock->getStockId()) ? -1 : 0;
+        $instock = $this->isProductSalable->execute($product->getSku(), $stockItem->getStockId()) ? -1 : 0;
 
         /* Legacy stock */
         if (null === $qty) {
