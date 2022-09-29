@@ -21,8 +21,14 @@
 
 namespace Codisto\Connect\Model;
 
+use Magento\Framework\Exception\InputException;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\DB\Ddl\Table;
+use Magento\InventoryConfigurationApi\Api\Data\StockItemConfigurationInterface;
+use Magento\InventorySalesApi\Api\Data\SalesChannelInterface;
+use Magento\InventorySalesApi\Api\GetProductSalableQtyInterface;
+use Magento\InventorySalesApi\Api\StockResolverInterface;
 
 class Sync
 {
@@ -81,6 +87,12 @@ class Sync
 
     private $urlBuilder;
 
+    private $getProductSalableQty;
+    private $stockResolver;
+    private $getWebsiteCodeByWebsiteId;
+    private $isProductSalable;
+    private $getStockItemConfiguration;
+
     /*
         @codingStandardsIgnoreStart MEQP2.Classes.CollectionDependency.CollectionDependency
             \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory is required as we use the walk interface
@@ -118,6 +130,11 @@ class Sync
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Magento\Catalog\Model\Product\Media\ConfigFactory $mediaConfigFactory,
         \Magento\Framework\Model\ResourceModel\IteratorFactory $iteratorFactory,
+        GetProductSalableQtyInterface $getProductSalableQty,
+        StockResolverInterface $stockResolver,
+        Magento\InventorySales\Model\ResourceModel\GetWebsiteCodeByWebsiteId $getWebsiteCodeByWebsiteId,
+        \Magento\InventorySalesApi\Api\IsProductSalableInterface $isProductSalable,
+        Magento\InventoryConfigurationApi\Api\GetStockItemConfigurationInterface $getStockItemConfiguration,
         \Codisto\Connect\Helper\Data $codistoHelper
     // @codingStandardsIgnoreEnd MEQP2.Classes.CollectionDependency.CollectionDependency
     ) {
@@ -153,6 +170,12 @@ class Sync
         $this->urlBuilder = $context->getUrl();
         $this->codistoHelper = $codistoHelper;
         $this->scopeConfig = $scopeConfig;
+
+        $this->getProductSalableQty = $getProductSalableQty;
+        $this->stockResolver = $stockResolver;
+        $this->getWebsiteCodeByWebsiteId = $getWebsiteCodeByWebsiteId;
+        $this->isProductSalable = $isProductSalable;
+        $this->getStockItemConfiguration = $getStockItemConfiguration;
 
         $this->attributecache = [];
         $this->attributeLabelCache = [];
@@ -915,23 +938,46 @@ class Sync
         return $listPrice;
     }
 
-    private function _syncStockData($product, $productId, $stockId)
+    private function _syncStockData($product, $productId, $websiteId)
     {
-        $stockItem = $this->stockItemFactory->create();
-        $stockItem->setStockId($stockId)
-                    ->setProduct($product);
+        /* Legacy stock ID */
+        $stockId = \Magento\CatalogInventory\Model\Stock::DEFAULT_STOCK_ID;
 
-        $stockItem->getResource()->loadByProductId($stockItem, $productId, $stockItem->getStockId());
+        /* Get salable stock from MSI for website */
+        $websiteCode = is_string($websiteId) ? $websiteId : $this->getWebsiteCodeByWebsiteId->execute((int)$websiteId);
 
-        $qty = $stockItem->getQty();
-        if (!is_numeric($qty)) {
-            $qty = 0;
+        $qty = null;
+        $manageStock = null;
+        $backorders = null;
+        $instock = null;
+
+        // TODO: Wrap in try block?
+        $stockItem = $this->stockResolver->execute(SalesChannelInterface::TYPE_WEBSITE, $websiteCode);
+        $stockConfiguration = $this->getStockItemConfiguration->execute($product->getSku(), $stockItem->getStockId());
+        $qty = $this->getProductSalableQty->execute($product->getSku(), $stockItem->getStockId());
+        $manageStock = $stockConfiguration->isManageStock() ? -1 : 0;
+        $backorders =
+            $stockConfiguration->getBackorders() === StockItemConfigurationInterface::BACKORDERS_YES_NONOTIFY
+            || $stockConfiguration->getBackorders() === StockItemConfigurationInterface::BACKORDERS_YES_NOTIFY ? -1 : 0;
+        $instock = $this->isProductSalable->execute($product->getSku(), $stock->getStockId()) ? -1 : 0;
+
+        /* Legacy stock */
+        if (null === $qty) {
+            $stockItem = $this->stockItemFactory->create();
+            $stockItem->setStockId($stockId)
+                ->setProduct($product);
+
+            $stockItem->getResource()->loadByProductId($stockItem, $productId, $stockItem->getStockId());
+            $manageStock = $stockItem->getManageStock() ? -1 : 0;
+            $backorders = $stockItem->getBackorders() == \Magento\CatalogInventory\Model\Stock::BACKORDERS_YES_NONOTIFY
+            || $stockItem->getBackorders() == \Magento\CatalogInventory\Model\Stock::BACKORDERS_YES_NOTIFY ? -1 : 0;
+            $instock = $stockItem->getIsInStock() ? -1 : 0;
+
+            $qty = $stockItem->getQty();
+            if (!is_numeric($qty)) {
+                $qty = 0;
+            }
         }
-
-        $manageStock = $stockItem->getManageStock() ? -1 : 0;
-        $backorders = $stockItem->getBackorders() == \Magento\CatalogInventory\Model\Stock::BACKORDERS_YES_NONOTIFY
-                    || $stockItem->getBackorders() == \Magento\CatalogInventory\Model\Stock::BACKORDERS_YES_NOTIFY ? -1 : 0;
-        $instock = $stockItem->getIsInStock() ? -1 : 0;
 
         return ['qty' => (int)$qty, 'managestock' => $manageStock, 'backorders' => $backorders, 'instock' => $instock ];
     }
@@ -2182,7 +2228,7 @@ class Sync
         $stockData = $this->_syncStockData(
             $product,
             $productId,
-            \Magento\CatalogInventory\Model\Stock::DEFAULT_STOCK_ID
+            $store->getWebsiteId()
         );
 
         $data = [];
