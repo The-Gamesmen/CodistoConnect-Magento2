@@ -951,15 +951,18 @@ class Sync
         $backorders = null;
         $instock = null;
 
-        // TODO: Wrap in try block?
-        $stockItem = $this->stockResolver->execute(SalesChannelInterface::TYPE_WEBSITE, $websiteCode);
-        $stockConfiguration = $this->getStockItemConfiguration->execute($product->getSku(), $stockItem->getStockId());
-        $qty = $this->getProductSalableQty->execute($product->getSku(), $stockItem->getStockId());
-        $manageStock = $stockConfiguration->isManageStock() ? -1 : 0;
-        $backorders =
-            $stockConfiguration->getBackorders() === StockItemConfigurationInterface::BACKORDERS_YES_NONOTIFY
-            || $stockConfiguration->getBackorders() === StockItemConfigurationInterface::BACKORDERS_YES_NOTIFY ? -1 : 0;
-        $instock = $this->isProductSalable->execute($product->getSku(), $stockItem->getStockId()) ? -1 : 0;
+        try {
+            $stockItem = $this->stockResolver->execute(SalesChannelInterface::TYPE_WEBSITE, $websiteCode);
+            $stockConfiguration = $this->getStockItemConfiguration->execute($product->getSku(), $stockItem->getStockId());
+            $qty = $this->getProductSalableQty->execute($product->getSku(), $stockItem->getStockId());
+            $manageStock = $stockConfiguration->isManageStock() ? -1 : 0;
+            $backorders =
+                $stockConfiguration->getBackorders() === StockItemConfigurationInterface::BACKORDERS_YES_NONOTIFY
+                || $stockConfiguration->getBackorders() === StockItemConfigurationInterface::BACKORDERS_YES_NOTIFY ? -1 : 0;
+            $instock = $this->isProductSalable->execute($product->getSku(), $stockItem->getStockId()) ? -1 : 0;
+        } catch (\Exception $e) {
+            throw $e;
+        }
 
         /* Legacy stock */
         if (null === $qty) {
@@ -2225,11 +2228,17 @@ class Sync
             $price
         );
 
-        $stockData = $this->_syncStockData(
-            $product,
-            $productId,
-            $store->getWebsiteId()
-        );
+        $stockData = [];
+        try {
+            $stockData = $this->_syncStockData(
+                $product,
+                $productId,
+                $store->getWebsiteId()
+            );
+        } catch (\Exception $e) {
+            $this->codistoHelper->logger((string)$e);
+            return;
+        }
 
         $data = [];
         $data[] = $productId; //ExternalReference ?1
