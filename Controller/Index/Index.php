@@ -589,6 +589,7 @@ class Index extends \Magento\Framework\App\Action\Action
     private function _processPayment(
         $order,
         $ordercontent,
+        $ordersubtotal,
         $ordertotal,
         $paypaltransactionid,
         $ebaysalesrecordnumber,
@@ -789,7 +790,10 @@ class Index extends \Magento\Framework\App\Action\Action
         $ordertotal = (float)($ordercontent->ordertotal[0]);
         $ordersubtotal = (float)($ordercontent->ordersubtotal[0]);
         $ordertaxtotal = (float)($ordercontent->ordertaxtotal[0]);
-        $weightunit = (string)$ordercontent->weightunit;
+        $weightunit= $this->scopeConfig->getValue(
+            'general/locale/weight_unit',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+        );
 
         $ordersubtotal = $this->priceCurrency->round($ordersubtotal);
         $ordersubtotalincltax = $this->priceCurrency->round($ordersubtotal + $ordertaxtotal);
@@ -1054,6 +1058,7 @@ class Index extends \Magento\Framework\App\Action\Action
         $payment = $this->_processPayment(
             $order,
             $ordercontent,
+            $ordersubtotal,
             $ordertotal,
             $paypaltransactionid,
             $ebaysalesrecordnumber,
@@ -1488,7 +1493,10 @@ class Index extends \Magento\Framework\App\Action\Action
     ) {
         $orderstatus = $order->getStatus();
         $ordercontent = $xml->entry->content->children('http://api.codisto.com/schemas/2009/');
-        $weightunit = (string)$ordercontent->weightunit;
+        $weightunit= $this->scopeConfig->getValue(
+            'general/locale/weight_unit',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+        );
 
         $order->setCodistoMerchantid((string)$ordercontent->merchantid);
 
@@ -1823,11 +1831,15 @@ class Index extends \Magento\Framework\App\Action\Action
                 $customerGroupId = $koganGroup->getId();
             }
 
+            $regexPattern = '/(?:[^\p{L}\p{M}\,\-\_\.\'’`\s\d]){1,255}+/u';
+            $matchedFirstName = preg_replace($regexPattern, '', (string)$addressBilling['firstname']);
+            $matchedLastName = preg_replace($regexPattern, '', (string)$addressBilling['lastname']);
+
             $customer->setWebsiteId($websiteId);
             $customer->setStoreId($store->getId());
             $customer->setEmail($email);
-            $customer->setFirstname((string)$addressBilling['firstname']);
-            $customer->setLastname((string)$addressBilling['lastname']);
+            $customer->setFirstname($matchedFirstName);
+            $customer->setLastname($matchedLastName);
             $customer->setPassword((string)sha1(uniqid()));
             if ($customerGroupId) {
                 $customer->setGroupId($customerGroupId);
