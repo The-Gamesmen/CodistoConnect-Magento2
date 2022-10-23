@@ -896,6 +896,7 @@ class Data
 
     public function processCmsContent($content, $storeId)
     {
+        if(is_null($content)){ return ''; };
         if (strpos($content, '{{') === false) {
             return trim($content);
         }
