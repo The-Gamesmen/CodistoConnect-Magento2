@@ -2005,7 +2005,7 @@ class Sync
                 $attributeValue = $this->codistoHelper->processCmsContent($attributeValue, $storeId);
             }
         } elseif (in_array($attributeData['frontend_type'], ['select', 'multiselect'])) {
-            if($attributeData['frontend_type']=='multiselect') {
+            if($attributeData['frontend_type']=='multiselect' && !is_null($attributeValue)) {
                 $attributeValue = explode(',',$attributeValue);
             }
             $defaultValue = $this->_syncProductAttributeOptionText(
