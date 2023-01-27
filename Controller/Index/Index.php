@@ -465,7 +465,7 @@ class Index extends \Magento\Framework\App\Action\Action
                 break;
         }
 
-        $weight = max($weight, 1.0);
+        $weight = max($weight, 0.0);
 
         return $weight;
     }
@@ -1649,9 +1649,15 @@ class Index extends \Magento\Framework\App\Action\Action
             $taxamount = $priceinctax - $price;
             $taxpercent = $price == 0 ? 0 : round($priceinctax / $price - 1.0, 2) * 100;
 
-            $weight = $this->_translateWeight($orderline->weight[0], $weightunit);
+            if(isset($productData['product']) && is_object($productData['product'])) {
+                $weight = (float)$productData['product']->getWeight();
+            }
 
-            $weight_total += $weight;
+            if(!$weight) {
+                $weight = $this->_translateWeight($orderline->weight[0], $weightunit);
+            }
+
+            $weight_total += ($weight * $qty);
 
             $itemData = $this->_processOrderSyncLine(
                 $order,
@@ -1832,8 +1838,8 @@ class Index extends \Magento\Framework\App\Action\Action
             }
 
             $regexPattern = '/(?:[^\p{L}\p{M}\,\-\_\.\'’`\s\d]){1,255}+/u';
-            $matchedFirstName = preg_replace($regexPattern, '', (string)$addressBilling['firstname']);
-            $matchedLastName = preg_replace($regexPattern, '', (string)$addressBilling['lastname']);
+            $matchedFirstName = preg_replace($regexPattern, '_', (string)$addressBilling['firstname']);
+            $matchedLastName = preg_replace($regexPattern, '_', (string)$addressBilling['lastname']);
 
             $customer->setWebsiteId($websiteId);
             $customer->setStoreId($store->getId());
