@@ -663,7 +663,7 @@ class Index extends \Magento\Framework\App\Action\Action
     private function _processShippingDescription($order, $quote, $freightservice)
     {
         $shippingDescription = '';
-        if (strtolower($freightservice ?? '') != 'freight') {
+        if (strtolower($freightservice) != 'freight') {
             $matchFound = false;
 
             $shippingDescription = (string)$quote->getShippingAddress()->getShippingDescription();
@@ -673,7 +673,7 @@ class Index extends \Magento\Framework\App\Action\Action
                 foreach ($shippingRates as $rate) {
                     $shippingMethodTitle = (string)$rate->getMethodTitle();
 
-                    if (strpos($shippingDescription ?? '', $shippingMethodTitle) !== false) {
+                    if (strpos($shippingDescription, $shippingMethodTitle) !== false) {
                         $shippingDescription = str_replace($shippingMethodTitle, $freightservice, $shippingDescription);
                         $matchFound = true;
                         break;
@@ -1838,10 +1838,8 @@ class Index extends \Magento\Framework\App\Action\Action
             }
 
             $regexPattern = '/(?:[^\p{L}\p{M}\,\-\_\.\'’`\s\d]){1,255}+/u';
-            $matchedFirstName = empty(preg_replace($regexPattern, '', (string)$addressBilling['firstname'])) ?
-                preg_replace($regexPattern, '_', (string)$addressBilling['firstname']) : preg_replace($regexPattern, '', (string)$addressBilling['firstname']) ;
-            $matchedLastName = empty(preg_replace($regexPattern, '', (string)$addressBilling['lastname'])) ?
-                preg_replace($regexPattern, '_', (string)$addressBilling['lastname']) : preg_replace($regexPattern, '', (string)$addressBilling['lastname']) ;
+            $matchedFirstName = preg_replace($regexPattern, '_', (string)$addressBilling['firstname']);
+            $matchedLastName = preg_replace($regexPattern, '_', (string)$addressBilling['lastname']);
 
             $customer->setWebsiteId($websiteId);
             $customer->setStoreId($store->getId());
@@ -1933,7 +1931,7 @@ class Index extends \Magento\Framework\App\Action\Action
 
         $first_name = $last_name = '';
 
-        if (strpos($address->name ?? '', ' ') !== false) {
+        if (strpos($address->name, ' ') !== false) {
             $name = explode(' ', (string)$address->name, 2);
             $first_name = $name[0];
             $last_name = $name[1];

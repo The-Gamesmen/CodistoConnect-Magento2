@@ -467,24 +467,26 @@ class Index extends \Magento\Framework\App\Action\Action
 
     private function _syncActionExecuteFirstException($e, $syncDb)
     {
-        if (property_exists($e, 'errorInfo') &&
-            $e->errorInfo[0] == 'HY000' &&
-            $e->errorInfo[1] == 5 &&
-            $e->errorInfo[2] == 'database is locked') {
-            return $this->_sendPlainResponse(200, 'OK', 'throttle');
-        } elseif (property_exists($e, 'errorInfo') &&
-            $e->errorInfo[0] == 'HY000' &&
-            $e->errorInfo[1] == 8 &&
-            $e->errorInfo[2] == 'attempt to write a readonly database') {
-            if ($this->file->fileExists($syncDb)) {
-                $this->file->rm($syncDb);
-            }
-        } elseif (property_exists($e, 'errorInfo') &&
-            $e->errorInfo[0] == 'HY000' &&
-            $e->errorInfo[1] == 11 &&
-            $e->errorInfo[2] == 'database disk image is malformed') {
-            if ($this->file->fileExists($syncDb)) {
-                $this->file->rm($syncDb);
+        if (property_exists($e, 'errorInfo') && is_array($e->errorInfo) && count($e->errorInfo) >= 3) {
+            if (property_exists($e, 'errorInfo') &&
+                $e->errorInfo[0] == 'HY000' &&
+                $e->errorInfo[1] == 5 &&
+                $e->errorInfo[2] == 'database is locked') {
+                return $this->_sendPlainResponse(200, 'OK', 'throttle');
+            } elseif (property_exists($e, 'errorInfo') &&
+                $e->errorInfo[0] == 'HY000' &&
+                $e->errorInfo[1] == 8 &&
+                $e->errorInfo[2] == 'attempt to write a readonly database') {
+                if ($this->file->fileExists($syncDb)) {
+                    $this->file->rm($syncDb);
+                }
+            } elseif (property_exists($e, 'errorInfo') &&
+                $e->errorInfo[0] == 'HY000' &&
+                $e->errorInfo[1] == 11 &&
+                $e->errorInfo[2] == 'database disk image is malformed') {
+                if ($this->file->fileExists($syncDb)) {
+                    $this->file->rm($syncDb);
+                }
             }
         }
 
@@ -578,7 +580,7 @@ class Index extends \Magento\Framework\App\Action\Action
 
     private function _syncActionExecuteChunkException($e, $syncDb)
     {
-        if(property_exists($e, 'errorInfo') && isset($e->errorInfo[0],$e->errorInfo[1],$e->errorInfo[2])) {
+        if (property_exists($e, 'errorInfo') && is_array($e->errorInfo) && count($e->errorInfo) >= 3) {
             if ($e->errorInfo[0] == 'HY000' &&
                 $e->errorInfo[1] == 5 &&
                 $e->errorInfo[2] == 'database is locked') {
@@ -649,10 +651,13 @@ class Index extends \Magento\Framework\App\Action\Action
 
             return $this->_sendPlainResponse(200, 'OK', $result);
         } catch (\Exception $e) {
-
-            $result = $this->_syncActionExecuteChunkException($e, $syncDb);
-            if ($result) {
-                return $result;
+            try {
+                $result = $this->_syncActionExecuteChunkException($e, $syncDb);
+                if ($result) {
+                    return $result;
+                }
+            } catch (\Exception $e2) {
+                // Do nothing, let the generalised exception handler report the error below
             }
 
             return $this->_sendExceptionError($e);

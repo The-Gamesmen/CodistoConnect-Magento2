@@ -21,10 +21,10 @@
 
 namespace Codisto\Connect\Model;
 
-use Magento\Framework\UrlInterface;
-use Magento\Framework\DB\Ddl\Table;
 use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\UrlInterface;
+use Magento\Framework\DB\Ddl\Table;
 use Magento\InventoryConfigurationApi\Api\Data\StockItemConfigurationInterface;
 use Magento\InventorySalesApi\Api\Data\SalesChannelInterface;
 use Magento\InventorySalesApi\Api\GetProductSalableQtyInterface;
@@ -130,12 +130,12 @@ class Sync
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Magento\Catalog\Model\Product\Media\ConfigFactory $mediaConfigFactory,
         \Magento\Framework\Model\ResourceModel\IteratorFactory $iteratorFactory,
-        \Codisto\Connect\Helper\Data $codistoHelper,
         GetProductSalableQtyInterface $getProductSalableQty,
         StockResolverInterface $stockResolver,
         \Magento\InventorySales\Model\ResourceModel\GetWebsiteCodeByWebsiteId $getWebsiteCodeByWebsiteId,
         \Magento\InventorySalesApi\Api\IsProductSalableInterface $isProductSalable,
-        \Magento\InventoryConfigurationApi\Api\GetStockItemConfigurationInterface $getStockItemConfiguration
+        \Magento\InventoryConfigurationApi\Api\GetStockItemConfigurationInterface $getStockItemConfiguration,
+        \Codisto\Connect\Helper\Data $codistoHelper
     // @codingStandardsIgnoreEnd MEQP2.Classes.CollectionDependency.CollectionDependency
     ) {
 
@@ -171,17 +171,17 @@ class Sync
         $this->codistoHelper = $codistoHelper;
         $this->scopeConfig = $scopeConfig;
 
-        $this->attributecache = [];
-        $this->attributeLabelCache = [];
-        $this->groupCache = [];
-        $this->optionCache = [];
-        $this->optionTextCache = [];
-
         $this->getProductSalableQty = $getProductSalableQty;
         $this->stockResolver = $stockResolver;
         $this->getWebsiteCodeByWebsiteId = $getWebsiteCodeByWebsiteId;
         $this->isProductSalable = $isProductSalable;
         $this->getStockItemConfiguration = $getStockItemConfiguration;
+
+        $this->attributecache = [];
+        $this->attributeLabelCache = [];
+        $this->groupCache = [];
+        $this->optionCache = [];
+        $this->optionTextCache = [];
 
         $ebayGroup = $groupFactory->create();
         $ebayGroup->load('eBay', 'customer_group_code');
@@ -320,7 +320,7 @@ class Sync
             while ($files->fetch()) {
                 $fileName = $ebayDesignDir.$name;
 
-                if (strpos($name ?? '', '..') === false) {
+                if (strpos($name, '..') === false) {
                     if (!file_exists($fileName)) { // @codingStandardsIgnoreLine
                         $dir = dirname($fileName);
 
@@ -940,7 +940,10 @@ class Sync
 
     private function _syncStockData($product, $productId, $websiteId)
     {
+        /* Legacy stock ID */
         $stockId = \Magento\CatalogInventory\Model\Stock::DEFAULT_STOCK_ID;
+
+        /* Get salable stock from MSI for website */
         $websiteCode = is_numeric($websiteId) ? $this->getWebsiteCodeByWebsiteId->execute((int)$websiteId) : $websiteId;
 
         $qty = null;
@@ -958,9 +961,10 @@ class Sync
                 || $stockConfiguration->getBackorders() === StockItemConfigurationInterface::BACKORDERS_YES_NOTIFY ? -1 : 0;
             $instock = $this->isProductSalable->execute($product->getSku(), $stockItem->getStockId()) ? -1 : 0;
         } catch (\Exception $e) {
-            $this->codistoHelper->logger((string)$e);
+            throw $e;
         }
-        
+
+        /* Legacy stock */
         if (null === $qty) {
             $stockItem = $this->stockItemFactory->create();
             $stockItem->setStockId($stockId)
@@ -977,6 +981,7 @@ class Sync
                 $qty = 0;
             }
         }
+
         return ['qty' => (int)$qty, 'managestock' => $manageStock, 'backorders' => $backorders, 'instock' => $instock ];
     }
 
@@ -1194,7 +1199,6 @@ class Sync
         $store = $args['store'];
         $db = $args['db'];
 
-        $insertSQL = $args['preparedskuStatement'];
         $insertSKULinkSQL = $args['preparedskulinkStatement'];
         $insertCategorySQL = $args['preparedcategoryproductStatement'];
         $insertSKUMatrixSQL = $args['preparedskumatrixStatement'];
