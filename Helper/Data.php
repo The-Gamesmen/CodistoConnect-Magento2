@@ -545,8 +545,7 @@ class Data
 
     private function _phpCanExec()
     {
-        return false; // Gamesmen Edit: Force process forking off
-        //return function_exists('proc_open') && function_exists('proc_close');
+        return function_exists('proc_open') && function_exists('proc_close');
     }
 
     private function _phpExtensionScript($extensions)
